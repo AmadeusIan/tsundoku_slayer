@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../viewmodels/dashboard_view_model.dart';
 import '../services/notification_helper.dart';
 import 'timer_screen.dart';
@@ -16,12 +17,25 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   late final DashboardViewModel _viewModel;
 
+  // Palet Warna Cozy Fantasy
+  static const Color bgBeige = Color(0xFFF5F5DC);
+  static const Color sakuraPink = Color(0xFFFFB7C5);
+  static const Color warmBrown = Color(0xFF5D4037);
+
+  // Standar Shadow & Border
+  final BoxShadow cozyShadow = BoxShadow(
+    color: warmBrown.withValues(alpha: 0.08),
+    blurRadius: 15,
+    offset: const Offset(0, 8),
+  );
+  
+  final BorderRadius cozyBorderRadius = BorderRadius.circular(20);
+  final BorderRadius cozyButtonRadius = BorderRadius.circular(15);
+
   @override
   void initState() {
     super.initState();
-    // 1. Inisialisasi Otak
     _viewModel = DashboardViewModel();
-    // 2. Tarik Data + Pengecekan Dialog Awal
     _initDashboard();
   }
 
@@ -29,7 +43,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     await _viewModel.loadDashboardData();
     if (!mounted) return;
 
-    // Memunculkan Peringatan Penting (Notifikasi OS & Takdir Streak)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       NotificationHelper.instance.requestPermissions();
@@ -50,11 +63,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Palet Warna Sakura Cozy
-    const Color bgBeige = Color(0xFFF5F5DC);
-    const Color sakuraPink = Color(0xFFFFB7C5);
-    const Color warmBrown = Color(0xFF5D4037);
-
     return ListenableBuilder(
       listenable: _viewModel,
       builder: (context, _) {
@@ -90,13 +98,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Row(
+                            Row(
                               children: [
-                                Icon(Icons.menu_book, color: warmBrown, size: 22),
-                                SizedBox(width: 8),
+                                const Icon(Icons.menu_book, color: warmBrown, size: 22),
+                                const SizedBox(width: 8),
                                 Text(
                                   'Grimoire Aktif',
-                                  style: TextStyle(
+                                  style: GoogleFonts.lora(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                     color: warmBrown,
@@ -111,7 +119,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   MaterialPageRoute(builder: (context) => const GrimoireLibraryScreen()),
                                 ).then((_) => _viewModel.loadDashboardData());
                               },
-                              child: const Text('Lihat Semua', style: TextStyle(color: Colors.pink)),
+                              child: Text('Lihat Semua', style: GoogleFonts.quicksand(color: Colors.pink, fontWeight: FontWeight.bold)),
                             ),
                           ],
                         ),
@@ -121,25 +129,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         if (_viewModel.activeBooks.isEmpty)
                           Container(
                             width: double.infinity,
-                            height: 150,
+                            padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: cozyBorderRadius,
                               border: Border.all(color: sakuraPink.withValues(alpha: 0.5), width: 2),
+                              boxShadow: [cozyShadow],
                             ),
                             child: _viewModel.backlogBooks.isNotEmpty
                                 ? Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      const Padding(
-                                        padding: EdgeInsets.symmetric(horizontal: 16),
-                                        child: Text(
-                                          'Rak sihirmu kosong, tapi ada naskah yang tertidur di gudang...',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(color: Colors.brown, fontStyle: FontStyle.italic),
-                                        ),
+                                      Text(
+                                        'Rak sihirmu kosong, tapi ada naskah yang tertidur di gudang...',
+                                        textAlign: TextAlign.center,
+                                        style: GoogleFonts.quicksand(color: warmBrown, fontStyle: FontStyle.italic),
                                       ),
-                                      const SizedBox(height: 10),
+                                      const SizedBox(height: 16),
                                       ElevatedButton(
                                         onPressed: () {
                                           Navigator.push(
@@ -150,17 +156,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: sakuraPink,
                                           foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                          shape: RoundedRectangleBorder(borderRadius: cozyButtonRadius),
+                                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                                         ),
-                                        child: const Text('Bangkitkan Grimoire Backlog'),
+                                        child: Text('Bangkitkan Grimoire Backlog', style: GoogleFonts.quicksand(fontWeight: FontWeight.bold)),
                                       ),
                                     ],
                                   )
-                                : const Center(
+                                : Center(
                                     child: Text(
                                       'Belum ada buku sihir yang aktif...\nKetuk tombol + untuk menambah buku',
                                       textAlign: TextAlign.center,
-                                      style: TextStyle(color: Colors.brown, fontStyle: FontStyle.italic),
+                                      style: GoogleFonts.quicksand(color: warmBrown, fontStyle: FontStyle.italic),
                                     ),
                                   ),
                           )
@@ -187,22 +194,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               return Container(
                                 decoration: BoxDecoration(
                                   color: Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: cozyBorderRadius,
                                   border: Border.all(color: sakuraPink.withValues(alpha: 0.3), width: 1.5),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: sakuraPink.withValues(alpha: 0.1),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
+                                  boxShadow: [cozyShadow],
                                 ),
                                 child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(20),
+                                  borderRadius: cozyBorderRadius,
                                   child: Material(
                                     color: Colors.transparent,
                                     child: Padding(
-                                      padding: const EdgeInsets.all(16),
+                                      padding: const EdgeInsets.all(20),
                                       child: Row(
                                         children: [
                                           // Ikon Grimoire Ajaib
@@ -222,7 +223,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                               children: [
                                                 Text(
                                                   book['title'] ?? 'Grimoire Tanpa Nama',
-                                                  style: const TextStyle(
+                                                  style: GoogleFonts.lora(
                                                     fontSize: 16,
                                                     fontWeight: FontWeight.bold,
                                                     color: warmBrown,
@@ -232,27 +233,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                 ),
                                                 const SizedBox(height: 4),
                                                 if (isBookCompleted)
-                                                  const Text(
+                                                  Text(
                                                     'Buku ini telah ditamatkan!',
-                                                    style: TextStyle(
+                                                    style: GoogleFonts.quicksand(
                                                       fontSize: 12,
                                                       color: Colors.green,
                                                       fontWeight: FontWeight.bold,
                                                     ),
                                                   )
                                                 else if (isDailyTargetMet)
-                                                  const Text(
+                                                  Text(
                                                     'Target Harian Terpenuhi!',
-                                                    style: TextStyle(
+                                                    style: GoogleFonts.quicksand(
                                                       fontSize: 12,
-                                                      color: Colors.amber,
+                                                      color: Colors.amber[700],
                                                       fontWeight: FontWeight.bold,
                                                     ),
                                                   )
                                                 else
                                                   Text(
                                                     'Target Hari Ini: $readToday / $dailyTarget hal',
-                                                    style: const TextStyle(
+                                                    style: GoogleFonts.quicksand(
                                                       fontSize: 12,
                                                       color: warmBrown,
                                                       fontWeight: FontWeight.w600,
@@ -273,7 +274,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                         ),
                                                         FractionallySizedBox(
                                                           widthFactor: progressHarian == 0 ? 0.02 : progressHarian,
-                                                          child: Container(
+                                                          child: AnimatedContainer(
+                                                            duration: const Duration(milliseconds: 500),
+                                                            curve: Curves.easeOut,
                                                             height: 8,
                                                             decoration: BoxDecoration(
                                                               color: sakuraPink,
@@ -300,7 +303,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                           ),
                                                           FractionallySizedBox(
                                                             widthFactor: progress == 0 ? 0.02 : progress,
-                                                            child: Container(
+                                                            child: AnimatedContainer(
+                                                              duration: const Duration(milliseconds: 500),
+                                                              curve: Curves.easeOut,
                                                               height: 8,
                                                               decoration: BoxDecoration(
                                                                 gradient: const LinearGradient(
@@ -316,7 +321,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                     const SizedBox(width: 10),
                                                     Text(
                                                       '$currentPage/$totalPages hal',
-                                                      style: const TextStyle(
+                                                      style: GoogleFonts.quicksand(
                                                         fontSize: 11,
                                                         fontWeight: FontWeight.w600,
                                                         color: warmBrown,
@@ -347,7 +352,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                 final int levelsGained = result['levelsGained'] ?? 0;
                                                 final int expGained = pagesRead * 10;
 
-                                                // Memicu penarikan data baru dari ViewModel
                                                 await _viewModel.loadDashboardData();
 
                                                 if (context.mounted) {
@@ -359,8 +363,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                     ScaffoldMessenger.of(context).showSnackBar(
                                                       SnackBar(
                                                         content: Text(
-                                                          '🎉 LEVEL UP! Kamu naik $levelsGained level! Level saat ini: ${_viewModel.currentLevel} 🌸 (+ $expGained EXP)',
-                                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                                          'LEVEL UP! Kamu naik $levelsGained level! Level saat ini: ${_viewModel.currentLevel} (+ $expGained EXP)',
+                                                          style: GoogleFonts.quicksand(color: Colors.white, fontWeight: FontWeight.bold),
                                                         ),
                                                         backgroundColor: Colors.pinkAccent,
                                                         duration: const Duration(seconds: 4),
@@ -374,8 +378,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                     ScaffoldMessenger.of(context).showSnackBar(
                                                       SnackBar(
                                                         content: Text(
-                                                          '✨ Sesi membaca selesai! Berhasil mempelajari $pagesRead halaman (+ $expGained EXP) 🌸',
-                                                          style: const TextStyle(color: Colors.white),
+                                                          'Sesi membaca selesai! Berhasil mempelajari $pagesRead halaman (+ $expGained EXP)',
+                                                          style: GoogleFonts.quicksand(color: Colors.white),
                                                         ),
                                                         backgroundColor: warmBrown,
                                                         behavior: SnackBarBehavior.floating,
@@ -401,9 +405,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                 ),
-          // Tombol Tambah Buku (Gaya RPG)
           floatingActionButton: FloatingActionButton(
             backgroundColor: sakuraPink,
+            shape: RoundedRectangleBorder(borderRadius: cozyButtonRadius),
             child: const Icon(Icons.add, color: Colors.white, size: 30),
             onPressed: () {
               _showAddBookSheet(context);
@@ -414,7 +418,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // WIDGET: Kartu Profil Character
   Widget _buildProfileCard(Color accent, Color textCol) {
     double expProgress = (_viewModel.currentExp / _viewModel.targetExp).clamp(0.0, 1.0); 
     if (expProgress == 0) expProgress = 0.02;
@@ -429,19 +432,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
           _viewModel.loadDashboardData();
         }
       },
-      borderRadius: BorderRadius.circular(25),
+      borderRadius: cozyBorderRadius,
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: [
-            BoxShadow(
-              color: accent.withValues(alpha: 0.3),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          borderRadius: cozyBorderRadius,
+          boxShadow: [cozyShadow],
         ),
         child: Row(
           children: [
@@ -457,12 +454,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   Text(
                     _viewModel.username,
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textCol),
+                    style: GoogleFonts.lora(fontSize: 22, fontWeight: FontWeight.bold, color: textCol),
                   ),
                   Text('Level ${_viewModel.currentLevel} Slayer',
-                      style: TextStyle(color: textCol.withValues(alpha: 0.7))),
+                      style: GoogleFonts.quicksand(color: textCol.withValues(alpha: 0.7))),
                   const SizedBox(height: 10),
-                  // Custom EXP Bar
                   Stack(
                     children: [
                       Container(
@@ -474,7 +470,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       FractionallySizedBox(
                         widthFactor: expProgress,
-                        child: Container(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 500),
+                          curve: Curves.easeOut,
                           height: 10,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(colors: [accent, Colors.pinkAccent]),
@@ -487,7 +485,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 6),
                   Text(
                     'EXP: ${_viewModel.currentExp} / ${_viewModel.targetExp}',
-                    style: TextStyle(
+                    style: GoogleFonts.quicksand(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: textCol.withValues(alpha: 0.6),
@@ -502,7 +500,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // WIDGET: Banner Mode Kritis (Emergency Night Mission)
   Widget _buildCriticalBanner(Color textCol) {
     return Container(
       width: double.infinity,
@@ -517,32 +514,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(25),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF2C3E50).withValues(alpha: 0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        borderRadius: cozyBorderRadius,
+        boxShadow: [cozyShadow],
       ),
       child: Column(
         children: [
           const Icon(Icons.nights_stay, size: 50, color: Colors.amber),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             'Malam Semakin Larut...',
-            style: TextStyle(
+            style: GoogleFonts.lora(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.amber,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Angin malam berhembus dingin. Baca setidaknya 1 halaman sebelum tengah malam untuk menyelamatkan kehangatan pohon sakuramu!',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: 14,
               color: Colors.white70,
               height: 1.5,
@@ -561,13 +552,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               foregroundColor: const Color(0xFF5D4037),
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: cozyButtonRadius,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            child: const Text(
+            child: Text(
               'Selamatkan Sekarang',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: GoogleFonts.quicksand(fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -575,7 +566,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // WIDGET: Representasi Pohon Sakura (Streak)
   Widget _buildStreakTree(Color accent, Color textCol) {
     if (_viewModel.isVacation) {
       return Container(
@@ -583,19 +573,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: LinearGradient(colors: [const Color(0xFF1A237E).withValues(alpha: 0.4), Colors.white]),
-          borderRadius: BorderRadius.circular(25),
+          borderRadius: cozyBorderRadius,
+          boxShadow: [cozyShadow],
         ),
         child: Column(
           children: [
-            const Text('Mode Istirahat',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A237E))),
+            Text('Mode Istirahat',
+                style: GoogleFonts.lora(fontWeight: FontWeight.bold, color: const Color(0xFF1A237E))),
             const SizedBox(height: 10),
             const Icon(Icons.nights_stay, size: 80, color: Colors.amberAccent),
             const SizedBox(height: 10),
             Text(
               'Pohon sakuramu sedang tidur lelap hingga ${_viewModel.vacationUntil}',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1A237E)),
+              style: GoogleFonts.quicksand(fontSize: 16, fontWeight: FontWeight.w600, color: const Color(0xFF1A237E)),
             ),
           ],
         ),
@@ -607,41 +598,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(colors: [accent.withValues(alpha: 0.4), Colors.white]),
-        borderRadius: BorderRadius.circular(25),
+        borderRadius: cozyBorderRadius,
+        boxShadow: [cozyShadow],
       ),
       child: Column(
         children: [
-          const Text('Pertumbuhan Sakura',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.brown)),
+          Text('Pertumbuhan Sakura',
+              style: GoogleFonts.lora(fontWeight: FontWeight.bold, color: Colors.brown)),
           const SizedBox(height: 10),
           Icon(Icons.park, size: 80, color: _viewModel.currentStreak > 0 ? Colors.green[300] : Colors.brown[200]),
           const SizedBox(height: 10),
           Text(
             '${_viewModel.currentStreak} Hari Tanpa Henti',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: textCol),
+            style: GoogleFonts.quicksand(fontSize: 18, fontWeight: FontWeight.w600, color: textCol),
           ),
         ],
       ),
     );
   }
 
-  // WIDGET: Formulir Tambah Grimoire (ModalBottomSheet Cozy)
   void _showAddBookSheet(BuildContext context) {
     final formKey = GlobalKey<FormState>();
     final titleController = TextEditingController();
     final pagesController = TextEditingController();
     final dailyTargetController = TextEditingController();
 
-    const Color bgBeige = Color(0xFFF5F5DC);
-    const Color sakuraPink = Color(0xFFFFB7C5);
-    const Color warmBrown = Color(0xFF5D4037);
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: bgBeige,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
       ),
       builder: (context) {
         return Padding(
@@ -670,10 +657,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(height: 20),
                   
-                  const Text(
+                  Text(
                     'Bangkitkan Grimoire Baru',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: GoogleFonts.lora(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: warmBrown,
@@ -683,7 +670,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Text(
                     'Tuliskan buku barumu dan tentukan target petualangan membaca kamu.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: GoogleFonts.quicksand(
                       fontSize: 14,
                       color: warmBrown.withValues(alpha: 0.7),
                     ),
@@ -692,27 +679,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   
                   TextFormField(
                     controller: titleController,
-                    style: const TextStyle(color: warmBrown),
+                    style: GoogleFonts.quicksand(color: warmBrown),
                     decoration: InputDecoration(
                       prefixIcon: const Icon(Icons.auto_stories, color: sakuraPink),
                       labelText: 'Judul Buku / Grimoire',
-                      labelStyle: TextStyle(color: warmBrown.withValues(alpha: 0.7)),
+                      labelStyle: GoogleFonts.quicksand(color: warmBrown.withValues(alpha: 0.7)),
                       filled: true,
                       fillColor: Colors.white.withValues(alpha: 0.6),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: cozyButtonRadius,
                         borderSide: BorderSide(color: sakuraPink.withValues(alpha: 0.5), width: 1.5),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: cozyButtonRadius,
                         borderSide: const BorderSide(color: sakuraPink, width: 2),
                       ),
                       errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: cozyButtonRadius,
                         borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
                       ),
                       focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: cozyButtonRadius,
                         borderSide: const BorderSide(color: Colors.redAccent, width: 2),
                       ),
                     ),
@@ -728,27 +715,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   TextFormField(
                     controller: pagesController,
                     keyboardType: TextInputType.number,
-                    style: const TextStyle(color: warmBrown),
+                    style: GoogleFonts.quicksand(color: warmBrown),
                     decoration: InputDecoration(
                       prefixIcon: const Icon(Icons.layers, color: sakuraPink),
                       labelText: 'Total Halaman',
-                      labelStyle: TextStyle(color: warmBrown.withValues(alpha: 0.7)),
+                      labelStyle: GoogleFonts.quicksand(color: warmBrown.withValues(alpha: 0.7)),
                       filled: true,
                       fillColor: Colors.white.withValues(alpha: 0.6),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: cozyButtonRadius,
                         borderSide: BorderSide(color: sakuraPink.withValues(alpha: 0.5), width: 1.5),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: cozyButtonRadius,
                         borderSide: const BorderSide(color: sakuraPink, width: 2),
                       ),
                       errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: cozyButtonRadius,
                         borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
                       ),
                       focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: cozyButtonRadius,
                         borderSide: const BorderSide(color: Colors.redAccent, width: 2),
                       ),
                     ),
@@ -768,27 +755,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   TextFormField(
                     controller: dailyTargetController,
                     keyboardType: TextInputType.number,
-                    style: const TextStyle(color: warmBrown),
+                    style: GoogleFonts.quicksand(color: warmBrown),
                     decoration: InputDecoration(
                       prefixIcon: const Icon(Icons.menu_book, color: sakuraPink),
                       labelText: 'Target Halaman Harian',
-                      labelStyle: TextStyle(color: warmBrown.withValues(alpha: 0.7)),
+                      labelStyle: GoogleFonts.quicksand(color: warmBrown.withValues(alpha: 0.7)),
                       filled: true,
                       fillColor: Colors.white.withValues(alpha: 0.6),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: cozyButtonRadius,
                         borderSide: BorderSide(color: sakuraPink.withValues(alpha: 0.5), width: 1.5),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: cozyButtonRadius,
                         borderSide: const BorderSide(color: sakuraPink, width: 2),
                       ),
                       errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: cozyButtonRadius,
                         borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
                       ),
                       focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: cozyButtonRadius,
                         borderSide: const BorderSide(color: Colors.redAccent, width: 2),
                       ),
                     ),
@@ -812,7 +799,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         final totalPages = int.parse(pagesController.text.trim());
                         final dailyTarget = int.parse(dailyTargetController.text.trim());
 
-                        // Panggil ViewModel untuk menulis ke SQLite
                         await _viewModel.insertNewBook(title, totalPages, dailyTarget);
 
                         if (context.mounted) {
@@ -820,8 +806,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                '🌸 Grimoire "$title" berhasil dibangkitkan!',
-                                style: const TextStyle(color: Colors.white),
+                                'Grimoire "$title" berhasil dibangkitkan!',
+                                style: GoogleFonts.quicksand(color: Colors.white),
                               ),
                               backgroundColor: warmBrown,
                               behavior: SnackBarBehavior.floating,
@@ -838,14 +824,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
+                        borderRadius: cozyButtonRadius,
                       ),
                       elevation: 3,
                       shadowColor: sakuraPink.withValues(alpha: 0.5),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Bangkitkan Grimoire',
-                      style: TextStyle(
+                      style: GoogleFonts.quicksand(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.1,
@@ -862,28 +848,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // WIDGET: Dialog Cozy Streak Shield Terpakai
   void _showShieldUsedDialog() {
-    const Color bgBeige = Color(0xFFF5F5DC);
-    const Color sakuraPink = Color(0xFFFFB7C5);
-    const Color warmBrown = Color(0xFF5D4037);
-
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           backgroundColor: bgBeige,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(25),
+            borderRadius: cozyBorderRadius,
           ),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.security, size: 26, color: Colors.blueGrey),
-              SizedBox(width: 8),
+              const Icon(Icons.security, size: 26, color: Colors.blueGrey),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Streak Shield Aktif',
-                  style: TextStyle(
+                  style: GoogleFonts.lora(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: warmBrown,
@@ -894,7 +875,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           content: Text(
             'Syukurlah! Sihir dari Streak Shield-mu telah melindungi pohon sakuramu dari layu semalam.',
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: 14,
               color: warmBrown.withValues(alpha: 0.9),
             ),
@@ -906,11 +887,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 backgroundColor: sakuraPink,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: cozyButtonRadius,
                 ),
                 elevation: 2,
               ),
-              child: const Text('Terima Kasih'),
+              child: Text('Terima Kasih', style: GoogleFonts.quicksand(fontWeight: FontWeight.bold)),
             ),
           ],
         );
@@ -918,28 +899,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // WIDGET: Dialog Cozy Streak Putus (Desain Empati Memaafkan)
   void _showStreakBrokenDialog() {
-    const Color bgBeige = Color(0xFFF5F5DC);
-    const Color sakuraPink = Color(0xFFFFB7C5);
-    const Color warmBrown = Color(0xFF5D4037);
-
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           backgroundColor: bgBeige,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(25),
+            borderRadius: cozyBorderRadius,
           ),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.energy_savings_leaf, size: 26, color: Colors.green),
-              SizedBox(width: 8),
+              const Icon(Icons.energy_savings_leaf, size: 26, color: Colors.green),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Musim Berganti...',
-                  style: TextStyle(
+                  style: GoogleFonts.lora(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: warmBrown,
@@ -950,7 +926,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           content: Text(
             'Musim telah berganti dan pohon sakuramu sedang tertidur. Tidak apa-apa, mari tanam benih yang baru hari ini!',
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: 14,
               color: warmBrown.withValues(alpha: 0.9),
             ),
@@ -962,11 +938,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 backgroundColor: sakuraPink,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: cozyButtonRadius,
                 ),
                 elevation: 2,
               ),
-              child: const Text('Tanam Benih Baru'),
+              child: Text('Tanam Benih Baru', style: GoogleFonts.quicksand(fontWeight: FontWeight.bold)),
             ),
           ],
         );
@@ -974,28 +950,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // WIDGET: Dialog Cozy Pancingan Buku Baru
   void _showSuggestedBookDialog(Map<String, dynamic> book) {
-    const Color bgBeige = Color(0xFFF5F5DC);
-    const Color sakuraPink = Color(0xFFFFB7C5);
-    const Color warmBrown = Color(0xFF5D4037);
-
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           backgroundColor: bgBeige,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(25),
+            borderRadius: cozyBorderRadius,
           ),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.auto_awesome, size: 26, color: Colors.amber),
-              SizedBox(width: 8),
+              const Icon(Icons.auto_awesome, size: 26, color: Colors.amber),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Perjalanan Baru?',
-                  style: TextStyle(
+                  style: GoogleFonts.lora(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: warmBrown,
@@ -1006,7 +977,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           content: Text(
             'Satu perjalanan telah usai! Maukah kamu mulai membaca "${book['title']}" sekarang?',
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: 14,
               color: warmBrown.withValues(alpha: 0.9),
             ),
@@ -1014,7 +985,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Nanti Saja', style: TextStyle(color: warmBrown.withValues(alpha: 0.7))),
+              child: Text('Nanti Saja', style: GoogleFonts.quicksand(color: warmBrown.withValues(alpha: 0.7))),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -1023,7 +994,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Buku "${book['title']}" telah diaktifkan!'),
+                      content: Text('Buku "${book['title']}" telah diaktifkan!', style: GoogleFonts.quicksand()),
                       backgroundColor: sakuraPink,
                     ),
                   );
@@ -1033,11 +1004,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 backgroundColor: sakuraPink,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: cozyButtonRadius,
                 ),
                 elevation: 2,
               ),
-              child: const Text('Aktifkan Grimoire'),
+              child: Text('Aktifkan Grimoire', style: GoogleFonts.quicksand(fontWeight: FontWeight.bold)),
             ),
           ],
         );
@@ -1045,7 +1016,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // WIDGET: Banner Darurat Revive Potion
   Widget _buildEmergencyBanner(Color accent, Color textCol) {
     return Container(
       width: double.infinity,
@@ -1060,15 +1030,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: cozyBorderRadius,
         border: Border.all(color: Colors.purple.withValues(alpha: 0.3), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.purple.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: [cozyShadow],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1080,7 +1044,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Expanded(
                 child: Text(
                   'Streak Terputus! (${_viewModel.previousStreak} Hari)',
-                  style: const TextStyle(
+                  style: GoogleFonts.lora(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.purple,
@@ -1092,7 +1056,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 10),
           Text(
             'Jangan menyerah! Kamu masih punya waktu sebelum sihir pohon sakuramu benar-benar memudar.',
-            style: TextStyle(
+            style: GoogleFonts.quicksand(
               fontSize: 14,
               color: textCol.withValues(alpha: 0.9),
               height: 1.4,
@@ -1108,9 +1072,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   if (success) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: const Text(
-                          '✨ Keajaiban terjadi! Pohon sakuramu kembali mekar.',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        content: Text(
+                          'Keajaiban terjadi! Pohon sakuramu kembali mekar.',
+                          style: GoogleFonts.quicksand(color: Colors.white, fontWeight: FontWeight.bold),
                         ),
                         backgroundColor: Colors.purple,
                         duration: const Duration(seconds: 4),
@@ -1133,13 +1097,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: cozyButtonRadius,
                 ),
                 elevation: 2,
               ),
-              child: const Text(
+              child: Text(
                 'Gunakan Revive Potion',
-                style: TextStyle(
+                style: GoogleFonts.quicksand(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.1,
