@@ -379,11 +379,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (expProgress == 0) expProgress = 0.02;
 
     return InkWell(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        // 1. Tunggu (await) sampai pengguna kembali dari layar Profil
+        await Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const ProfileScreen()),
         );
+        // 2. Setelah kembali (pop), paksa Dashboard untuk memuat ulang data dari SQLite
+        if (mounted) {
+          _loadData();
+        }
       },
       borderRadius: BorderRadius.circular(25),
       child: Container(
@@ -460,6 +465,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // WIDGET: Representasi Pohon Sakura (Streak)
   Widget _buildStreakTree(Color accent, Color textCol) {
+    final bool isVacation = DatabaseHelper.instance.isVacationActive(userData!['vacation_until'] as String?);
+
+    if (isVacation) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: [const Color(0xFF1A237E).withValues(alpha: 0.4), Colors.white]),
+          borderRadius: BorderRadius.circular(25),
+        ),
+        child: Column(
+          children: [
+            const Text('🌙 Mode Istirahat 🌙',
+                style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A237E))),
+            const SizedBox(height: 10),
+            const Icon(Icons.nights_stay, size: 80, color: Colors.amberAccent),
+            const SizedBox(height: 10),
+            Text(
+              'Pohon sakuramu sedang tidur lelap hingga ${userData!['vacation_until']}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1A237E)),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),

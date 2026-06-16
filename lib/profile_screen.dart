@@ -135,7 +135,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _buildStatCard('Aktivitas Terakhir', joinDate, Icons.calendar_today, Colors.blueAccent),
               ],
             ),
+            
+            const SizedBox(height: 40),
+
+            // --- TOMBOL WIPE AKUN ---
+            InkWell(
+              onTap: () => _showWipeAccountDialog(context),
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.redAccent.withValues(alpha: 0.4), width: 1.5),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.delete_forever, color: Colors.redAccent, size: 26),
+                    const SizedBox(width: 10),
+                    const Text(
+                      'Wipe Akun & Mulai Baru',
+                      style: TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // --- TOMBOL MODE CUTI ---
+            InkWell(
+              onTap: () => _showVacationDialog(context),
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A237E).withValues(alpha: 0.1), // Indigo lembut
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFF1A237E).withValues(alpha: 0.4), width: 1.5),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.nights_stay, color: Color(0xFF1A237E), size: 26),
+                    const SizedBox(width: 10),
+                    const Text(
+                      'Mode Istirahat (Cuti)',
+                      style: TextStyle(
+                        color: Color(0xFF1A237E),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            
           ],
+          
         ),
       ),
     );
@@ -181,6 +246,163 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showWipeAccountDialog(BuildContext context) {
+    // Membawa warna tema cozy
+    final Color bgBeige = const Color(0xFFF5F5DC);
+    final Color warmBrown = const Color(0xFF5D4037);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false, // User wajib memilih, tidak bisa asal ketuk luar
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          backgroundColor: bgBeige,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+          title: Row(
+            children: [
+              const Text('⚠️ ', style: TextStyle(fontSize: 24)),
+              Expanded(
+                child: Text(
+                  'Hancurkan Semua Sihir?',
+                  style: TextStyle(color: warmBrown, fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Apakah kamu yakin ingin menghapus seluruh Grimoire, level, dan barang di dalam tasmu? Pohon sakuramu akan ditanam ulang dari benih awal. Tindakan ini tidak bisa dibatalkan, King.',
+            style: TextStyle(color: warmBrown.withValues(alpha: 0.8), height: 1.4),
+          ),
+          actions: [
+            // Tombol Batalkan Niat
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(
+                'Batal',
+                style: TextStyle(color: warmBrown.withValues(alpha: 0.6), fontWeight: FontWeight.w600),
+              ),
+            ),
+            // Tombol Eksekusi Reset
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD32F2F).withValues(alpha: 0.9), // Merah peringatan lembut
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+              onPressed: () async {
+                // Eksekusi pembersihan database
+                await DatabaseHelper.instance.wipeAccountData();
+                
+                if (context.mounted) {
+                  Navigator.pop(dialogContext); // Tutup pop-up
+                  
+                  // Panggil fungsi muat data utama agar layar langsung segar kembali ke level 1
+                  _loadData(); 
+                  
+                  // Berikan umpan balik instan ke user
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Sihir telah di-wipe. Selamat memulai petualangan baru! 🌸'),
+                      backgroundColor: Color(0xFF5D4037),
+                    ),
+                  );
+                }
+              },
+              child: const Text(
+                'Ya, Ulang Awal',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showVacationDialog(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: bgBeige,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 50,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: warmBrown.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Icon(Icons.nights_stay, size: 50, color: Color(0xFF1A237E)),
+              const SizedBox(height: 10),
+              const Text(
+                'Bekukan Waktu',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A237E),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Tubuh dan pikiranmu butuh istirahat. Berapa lama kamu ingin membekukan waktu agar pohon sakuramu tidak layu?',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: warmBrown.withValues(alpha: 0.8), height: 1.4),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _vacationOptionButton(context, 1),
+                  _vacationOptionButton(context, 2),
+                  _vacationOptionButton(context, 3),
+                ],
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _vacationOptionButton(BuildContext context, int days) {
+    return ElevatedButton(
+      onPressed: () async {
+        await DatabaseHelper.instance.activateVacationMode(days);
+        if (context.mounted) {
+          Navigator.pop(context);
+          _loadData();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Waktu berhasil dibekukan selama $days hari. Selamat beristirahat! 🌙'),
+              backgroundColor: const Color(0xFF1A237E),
+            ),
+          );
+        }
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF1A237E).withValues(alpha: 0.8),
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+      ),
+      child: Text('$days Hari', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
     );
   }
 }

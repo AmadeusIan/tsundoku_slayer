@@ -19,10 +19,10 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    // Membuka database, versi 4 dengan migrasi onUpgrade
+    // Membuka database, versi 5 dengan migrasi onUpgrade
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -51,6 +51,13 @@ class DatabaseHelper {
         // Kolom mungkin sudah ditambahkan
       }
     }
+    if (oldVersion < 5) {
+      try {
+        await db.execute('ALTER TABLE users ADD COLUMN vacation_until TEXT;');
+      } catch (_) {
+        // Kolom mungkin sudah ditambahkan
+      }
+    }
   }
 
   // Mengeksekusi rancangan tabel saat aplikasi pertama kali dijalankan
@@ -71,6 +78,7 @@ class DatabaseHelper {
         vacation_start_date TEXT,
         vacation_end_date TEXT,
         vacation_cooldown_end TEXT,
+        vacation_until TEXT,
         last_revive_date TEXT,
         last_evaluation_date TEXT
       )
@@ -139,6 +147,40 @@ class DatabaseHelper {
       await db.insert('users', defaultUser);
       return defaultUser;
     }
+  }
+
+  // --- FUNGSI LOGIKA CUTI (VACATION MODE) ---
+
+  bool isVacationActive(String? vacationDate) {
+    if (vacationDate == null) return false;
+    try {
+      final DateTime until = DateTime.parse(vacationDate);
+      final DateTime now = DateTime.now();
+      // Bandingkan tanpa mempedulikan jam
+      final DateTime todayDate = DateTime(now.year, now.month, now.day);
+      final DateTime vacationUntilDate = DateTime(until.year, until.month, until.day);
+      
+      return todayDate.compareTo(vacationUntilDate) <= 0;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<void> activateVacationMode(int days) async {
+    final db = await instance.database;
+    final userResult = await db.query('users', limit: 1);
+    if (userResult.isEmpty) return;
+
+    final userId = userResult.first['id'] as int;
+    final DateTime targetDate = DateTime.now().add(Duration(days: days));
+    final String vacationUntil = targetDate.toIso8601String().substring(0, 10);
+
+    await db.update(
+      'users',
+      {'vacation_until': vacationUntil},
+      where: 'id = ?',
+      whereArgs: [userId],
+    );
   }
 
   // --- FUNGSI LOGIKA BUKU (GRIMOIRE) ---
@@ -438,6 +480,28 @@ class DatabaseHelper {
         return;
       }
 
+      // --- Cek Status Cuti (Vacation Mode) ---
+      final String? vacationUntil = user['vacation_until'] as String?;
+      
+      if (instance.isVacationActive(vacationUntil)) {
+        await txn.update(
+          'users',
+          {'last_evaluation_date': today},
+          where: 'id = ?',
+          whereArgs: [userId],
+        );
+        status = 'VACATION_ACTIVE';
+        return;
+      } else if (vacationUntil != null) {
+        // Cuti sudah kedaluwarsa, hapus dari database
+        await txn.update(
+          'users',
+          {'vacation_until': null},
+          where: 'id = ?',
+          whereArgs: [userId],
+        );
+      }
+
       // 2. Cek apakah ada sesi membaca kemarin
       final sessions = await txn.query(
         'reading_sessions',
@@ -552,6 +616,27 @@ class DatabaseHelper {
     });
 
     return {'status': status, 'message': message};
+  }
+  // --- FUNGSI DARURAT: WIPE AKUN ---
+  Future<void> wipeAccountData() async {
+    final db = await instance.database;
+    
+    // Menjalankan transaksi massal agar aman dan tidak korup
+    await db.transaction((txn) async {
+      await txn.delete('books');
+      await txn.delete('reading_sessions');
+      await txn.delete('inventory');
+
+      // Mengembalikan status karakter ke titik awal
+      await txn.update('users', {
+        'current_level': 1,
+        'current_exp': 0,
+        'current_streak': 0,
+        'last_evaluation_date': null,
+        'last_read_date': null,
+        'previous_streak': 0,
+      });
+    });
   }
 }
 
