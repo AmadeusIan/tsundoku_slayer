@@ -19,10 +19,10 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    // Membuka database, versi 5 dengan migrasi onUpgrade
+    // Membuka database, versi 7 dengan migrasi onUpgrade
     return await openDatabase(
       path,
-      version: 5,
+      version: 7,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -58,6 +58,22 @@ class DatabaseHelper {
         // Kolom mungkin sudah ditambahkan
       }
     }
+    if (oldVersion < 6) {
+      try {
+        await db.execute('ALTER TABLE books ADD COLUMN daily_target_pages INTEGER DEFAULT 15;');
+      } catch (_) {
+        // Kolom mungkin sudah ditambahkan
+      }
+    }
+    if (oldVersion < 7) {
+      try {
+        await db.execute('ALTER TABLE users ADD COLUMN created_at TEXT;');
+        final now = DateTime.now().toIso8601String();
+        await db.update('users', {'created_at': now});
+      } catch (_) {
+        // Kolom mungkin sudah ditambahkan
+      }
+    }
   }
 
   // Mengeksekusi rancangan tabel saat aplikasi pertama kali dijalankan
@@ -80,7 +96,8 @@ class DatabaseHelper {
         vacation_cooldown_end TEXT,
         vacation_until TEXT,
         last_revive_date TEXT,
-        last_evaluation_date TEXT
+        last_evaluation_date TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
       )
     ''');
 
@@ -92,6 +109,7 @@ class DatabaseHelper {
         total_pages INTEGER NOT NULL,
         current_page INTEGER DEFAULT 0,
         target_days INTEGER NOT NULL,
+        daily_target_pages INTEGER DEFAULT 15,
         status TEXT NOT NULL, 
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
       )
@@ -184,6 +202,22 @@ class DatabaseHelper {
   }
 
   // --- FUNGSI LOGIKA BUKU (GRIMOIRE) ---
+
+  Future<int> getPagesReadToday(int bookId) async {
+    final db = await instance.database;
+    final String today = DateTime.now().toIso8601String().substring(0, 10);
+    
+    final result = await db.rawQuery(
+      "SELECT SUM(pages_read) as total_read FROM reading_sessions WHERE book_id = ? AND session_date LIKE ?",
+      [bookId, '$today%']
+    );
+    
+    if (result.isNotEmpty && result.first['total_read'] != null) {
+      // sqflite rawQuery SUM returns an int (or null if no rows match)
+      return (result.first['total_read'] as num).toInt();
+    }
+    return 0;
+  }
 
   Future<int> insertBook(Map<String, dynamic> row) async {
     final db = await instance.database;
@@ -635,6 +669,8 @@ class DatabaseHelper {
         'last_evaluation_date': null,
         'last_read_date': null,
         'previous_streak': 0,
+        'vacation_until': null,
+        'created_at': DateTime.now().toIso8601String(),
       });
     });
   }

@@ -50,7 +50,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final int targetExp = DatabaseHelper.instance.getTargetExp(currentLevel);
     final int currentStreak = userData!['current_streak'] ?? 0;
     
-    final String joinDate = userData!['last_evaluation_date'] ?? 'Belum ada data';
+    final String rawCreatedAt = userData!['created_at'] ?? DateTime.now().toIso8601String();
+    final DateTime createdDate = DateTime.tryParse(rawCreatedAt) ?? DateTime.now();
+    final String formattedJoinedDate = '${createdDate.day.toString().padLeft(2, '0')}-${createdDate.month.toString().padLeft(2, '0')}-${createdDate.year}';
+
+    final String lastEvaluationDate = userData!['last_evaluation_date'] ?? 'Belum ada data';
 
     return Scaffold(
       backgroundColor: bgBeige,
@@ -117,6 +121,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+            Text(
+              'Bergabung sejak: $formattedJoinedDate',
+              style: TextStyle(
+                fontSize: 14,
+                color: warmBrown.withValues(alpha: 0.7),
+                fontStyle: FontStyle.italic,
+              ),
+            ),
             const SizedBox(height: 32),
 
             // Stats Cards
@@ -132,7 +145,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 _buildStatCard('Streak Saat Ini', '$currentStreak Hari', Icons.local_fire_department, Colors.deepOrange),
                 const SizedBox(width: 16),
-                _buildStatCard('Aktivitas Terakhir', joinDate, Icons.calendar_today, Colors.blueAccent),
+                _buildStatCard('Aktivitas Terakhir', lastEvaluationDate, Icons.calendar_today, Colors.blueAccent),
               ],
             ),
             

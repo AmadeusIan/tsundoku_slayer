@@ -16,6 +16,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Map<String, dynamic>? userData;
   List<Map<String, dynamic>> activeBooks = [];
   List<Map<String, dynamic>> backlogBooks = [];
+  Map<int, int> pagesReadTodayMap = {};
   bool isLoading = true;
 
   @override
@@ -31,10 +32,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final books = await DatabaseHelper.instance.getActiveBooks();
     final bBooks = await DatabaseHelper.instance.getBacklogBooks();
     
+    Map<int, int> todayReads = {};
+    for (var b in books) {
+      final bookId = b['id'] as int;
+      todayReads[bookId] = await DatabaseHelper.instance.getPagesReadToday(bookId);
+    }
+    
     setState(() {
       userData = data;
       activeBooks = books;
       backlogBooks = bBooks;
+      pagesReadTodayMap = todayReads;
       isLoading = false;
     });
 
@@ -164,25 +172,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           final int totalPages = book['total_pages'] ?? 1;
                           final int currentPage = book['current_page'] ?? 0;
                           final double progress = (currentPage / totalPages).clamp(0.0, 1.0);
-                          final int targetDays = book['target_days'] ?? 1;
-
-                          final createdAtStr = book['created_at'];
-                          final createdAt = createdAtStr != null ? DateTime.tryParse(createdAtStr) ?? DateTime.now() : DateTime.now();
-                          final int daysPassed = DateTime.now().difference(createdAt).inDays;
-                          final int remainingDays = targetDays - daysPassed;
-                          final int remainingPages = totalPages - currentPage;
                           
-                          String targetText;
-                          Color targetColor = warmBrown.withValues(alpha: 0.6);
-                          if (remainingDays > 0) {
-                            final int dailyTarget = (remainingPages / remainingDays).ceil();
-                            targetText = 'Target harian: $dailyTarget hal/hari agar selesai tepat waktu!';
-                          } else if (remainingPages > 0) {
-                            targetText = 'Tenggat waktu terlewati! Jangan menyerah!';
-                            targetColor = Colors.redAccent;
-                          } else {
-                            targetText = 'Buku ini telah selesai!';
-                          }
+                          final int dailyTarget = book['daily_target_pages'] ?? 15;
+                          final int readToday = pagesReadTodayMap[book['id']] ?? 0;
+                          final double progressHarian = (readToday / dailyTarget).clamp(0.0, 1.0);
+                          
+                          final bool isDailyTargetMet = progressHarian >= 1.0;
+                          final int remainingPages = totalPages - currentPage;
+                          final bool isBookCompleted = remainingPages <= 0;
 
                           return Container(
                             decoration: BoxDecoration(
@@ -234,16 +231,61 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                             const SizedBox(height: 4),
-                                            Text(
-                                              targetText,
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: targetColor,
-                                                fontWeight: remainingDays <= 0 && remainingPages > 0 ? FontWeight.bold : FontWeight.normal,
+                                            if (isBookCompleted)
+                                              const Text(
+                                                '🎉 Buku ini telah ditamatkan!',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.green,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              )
+                                            else if (isDailyTargetMet)
+                                              const Text(
+                                                '✨ Target Harian Terpenuhi!',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.amber,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              )
+                                            else
+                                              Text(
+                                                'Target Hari Ini: $readToday / $dailyTarget hal',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: warmBrown,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
                                               ),
-                                            ),
-                                            const SizedBox(height: 10),
-                                            // Progress Bar
+                                            const SizedBox(height: 6),
+                                            if (!isBookCompleted)
+                                              Opacity(
+                                                opacity: isDailyTargetMet ? 0.5 : 1.0,
+                                                child: Stack(
+                                                  children: [
+                                                    Container(
+                                                      height: 8,
+                                                      decoration: BoxDecoration(
+                                                        color: sakuraPink.withValues(alpha: 0.2),
+                                                        borderRadius: BorderRadius.circular(4),
+                                                      ),
+                                                    ),
+                                                    FractionallySizedBox(
+                                                      widthFactor: progressHarian == 0 ? 0.02 : progressHarian,
+                                                      child: Container(
+                                                        height: 8,
+                                                        decoration: BoxDecoration(
+                                                          color: sakuraPink,
+                                                          borderRadius: BorderRadius.circular(4),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            if (!isBookCompleted) const SizedBox(height: 12),
+                                            // Progress Bar Keseluruhan
                                             Row(
                                               children: [
                                                 Expanded(
@@ -477,7 +519,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         child: Column(
           children: [
-            const Text('🌙 Mode Istirahat 🌙',
+            const Text('Mode Istirahat',
                 style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1A237E))),
             const SizedBox(height: 10),
             const Icon(Icons.nights_stay, size: 80, color: Colors.amberAccent),
@@ -501,7 +543,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: Column(
         children: [
-          const Text('🌸 Pertumbuhan Sakura 🌸',
+          const Text('Pertumbuhan Sakura',
               style: TextStyle(fontWeight: FontWeight.bold, color: Colors.brown)),
           const SizedBox(height: 10),
           Icon(Icons.park, size: 80, color: userData!['current_streak'] > 0 ? Colors.green[300] : Colors.brown[200]),
@@ -520,7 +562,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final formKey = GlobalKey<FormState>();
     final titleController = TextEditingController();
     final pagesController = TextEditingController();
-    final targetDaysController = TextEditingController();
+    final dailyTargetController = TextEditingController();
 
     const Color bgBeige = Color(0xFFF5F5DC);
     const Color sakuraPink = Color(0xFFFFB7C5);
@@ -659,14 +701,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Kolom 3: Target Hari Penyelesaian
+                  // Kolom 3: Target Halaman Harian
                   TextFormField(
-                    controller: targetDaysController,
+                    controller: dailyTargetController,
                     keyboardType: TextInputType.number,
                     style: const TextStyle(color: warmBrown),
                     decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.hourglass_empty, color: sakuraPink),
-                      labelText: 'Target Hari Penyelesaian',
+                      prefixIcon: const Icon(Icons.menu_book, color: sakuraPink),
+                      labelText: 'Target Halaman Harian',
                       labelStyle: TextStyle(color: warmBrown.withValues(alpha: 0.7)),
                       filled: true,
                       fillColor: Colors.white.withValues(alpha: 0.6),
@@ -689,11 +731,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Target hari tidak boleh kosong';
+                        return 'Target harian tidak boleh kosong';
                       }
                       final val = int.tryParse(value);
                       if (val == null || val <= 0) {
-                        return 'Masukkan jumlah hari yang valid (> 0)';
+                        return 'Masukkan jumlah halaman yang valid (> 0)';
                       }
                       return null;
                     },
@@ -706,14 +748,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       if (formKey.currentState!.validate()) {
                         final title = titleController.text.trim();
                         final totalPages = int.parse(pagesController.text.trim());
-                        final targetDays = int.parse(targetDaysController.text.trim());
+                        final dailyTarget = int.parse(dailyTargetController.text.trim());
 
                         // Menyimpan data ke tabel books di SQLite dengan status ACTIVE
                         await DatabaseHelper.instance.insertBook({
                           'title': title,
                           'total_pages': totalPages,
                           'current_page': 0,
-                          'target_days': targetDays,
+                          'target_days': 1, // Dummy stabilisator untuk skema lama
+                          'daily_target_pages': dailyTarget,
                           'status': 'ACTIVE',
                         });
 
