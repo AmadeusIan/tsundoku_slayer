@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dashboard_screen.dart'; // Menyambungkan file baru
+import 'main_navigation.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized(); // Wajib ditambahkan jika pakai SQLite
@@ -19,7 +19,7 @@ class TsundokuSlayerApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFFFB7C5)),
         useMaterial3: true,
       ),
-      home: const DashboardScreen(), // Mengarahkan ke layar Dashboard
+      home: const MainNavigation(), // Mengarahkan ke sistem navigasi utama
     );
   }
 }
