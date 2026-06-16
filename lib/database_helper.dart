@@ -272,6 +272,20 @@ class DatabaseHelper {
     return level * 100 + 50;
   }
 
+  Future<int> getInventoryQty(String itemCode) async {
+    final db = await instance.database;
+    final result = await db.query(
+      'inventory',
+      columns: ['quantity'],
+      where: 'item_code = ?',
+      whereArgs: [itemCode],
+    );
+    if (result.isNotEmpty) {
+      return result.first['quantity'] as int? ?? 0;
+    }
+    return 0;
+  }
+
   Future<Map<String, dynamic>> completeReadingSession({
     required int bookId,
     required int pagesRead,

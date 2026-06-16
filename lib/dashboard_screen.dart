@@ -4,6 +4,7 @@ import 'timer_screen.dart';
 import 'shop_screen.dart';
 import 'grimoire_library_screen.dart';
 import 'profile_screen.dart';
+import 'notification_helper.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -46,9 +47,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
       isLoading = false;
     });
 
+    int shieldQty = await DatabaseHelper.instance.getInventoryQty('STREAK_SHIELD');
+    final String todayStr = DateTime.now().toIso8601String().substring(0, 10);
+    final String? lastRead = data['last_read_date'] as String?;
+    final bool hasReadToday = lastRead != null && lastRead.startsWith(todayStr);
+    final String? vacationUntil = data['vacation_until'] as String?;
+    final bool isVacationActive = DatabaseHelper.instance.isVacationActive(vacationUntil);
+
+    await NotificationHelper.instance.scheduleNightMissions(hasReadToday, shieldQty > 0, isVacationActive);
+
     if (context.mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!context.mounted) return;
+        NotificationHelper.instance.requestPermissions();
         if (streakStatus == 'SHIELD_USED') {
           _showShieldUsedDialog();
         } else if (streakStatus == 'STREAK_BROKEN') {
@@ -83,6 +94,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     // --- EMERGENCY BANNER ---
                     if (_isEmergencyState())
                       _buildEmergencyBanner(sakuraPink, warmBrown),
+
+                    // --- CRITICAL NIGHT MODE BANNER ---
+                    if (_isCriticalMode())
+                      _buildCriticalBanner(warmBrown),
 
                     // --- SECTION: POHON SAKURA (STREAK) ---
                     _buildStreakTree(sakuraPink, warmBrown),
@@ -501,6 +516,95 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // LOGIKA: Cek apakah perlu memunculkan Mode Kritis
+  bool _isCriticalMode() {
+    if (userData == null) return false;
+    final now = DateTime.now();
+    if (now.hour < 21) return false;
+
+    final String todayStr = now.toIso8601String().substring(0, 10);
+    final String? lastRead = userData!['last_read_date'] as String?;
+    if (lastRead != null && lastRead.startsWith(todayStr)) return false;
+
+    final String? vacationUntil = userData!['vacation_until'] as String?;
+    if (DatabaseHelper.instance.isVacationActive(vacationUntil)) return false;
+
+    return true;
+  }
+
+  // WIDGET: Banner Mode Kritis (Emergency Night Mission)
+  Widget _buildCriticalBanner(Color textCol) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF2C3E50).withValues(alpha: 0.9),
+            const Color(0xFF4CA1AF).withValues(alpha: 0.9),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(25),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2C3E50).withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.nights_stay, size: 50, color: Colors.amber),
+          const SizedBox(height: 12),
+          const Text(
+            'Malam Semakin Larut...',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.amber,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Angin malam berhembus dingin. Baca setidaknya 1 halaman sebelum tengah malam untuk menyelamatkan kehangatan pohon sakuramu!',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white70,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const GrimoireLibraryScreen()),
+              ).then((_) => _loadData());
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFFB7C5), // Sakura Pink
+              foregroundColor: const Color(0xFF5D4037), // Warm Brown
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text(
+              'Selamatkan Sekarang',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'main_navigation.dart';
+import 'notification_helper.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Wajib ditambahkan jika pakai SQLite
+  await NotificationHelper.instance.init();
   runApp(const TsundokuSlayerApp());
 }
 
