@@ -7,7 +7,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tsundoku_slayer/database_helper.dart';
+import 'package:tsundoku_slayer/services/database_helper.dart';
 import 'package:tsundoku_slayer/main.dart';
 
 class MockDatabaseHelper extends DatabaseHelper {

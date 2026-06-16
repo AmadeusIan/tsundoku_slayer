@@ -1,6 +1,5 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'database_helper.dart';
+import '../viewmodels/timer_view_model.dart';
 
 class TimerScreen extends StatefulWidget {
   final Map<String, dynamic> book;
@@ -12,9 +11,7 @@ class TimerScreen extends StatefulWidget {
 }
 
 class _TimerScreenState extends State<TimerScreen> {
-  Timer? _timer;
-  int _secondsRemaining = 25 * 60; // Default 25 menit
-  bool _isRunning = false;
+  late final TimerViewModel _viewModel;
 
   static const Color bgBeige = Color(0xFFF5F5DC);
   static const Color sakuraPink = Color(0xFFFFB7C5);
@@ -23,51 +20,19 @@ class _TimerScreenState extends State<TimerScreen> {
   @override
   void initState() {
     super.initState();
+    _viewModel = TimerViewModel();
     // Memulai timer secara otomatis saat masuk ke layar
-    _startTimer();
+    _viewModel.startTimer(_showFlowExtensionSheet);
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _viewModel.dispose();
     super.dispose();
   }
 
-  void _startTimer() {
-    setState(() {
-      _isRunning = true;
-    });
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_secondsRemaining > 0) {
-        setState(() {
-          _secondsRemaining--;
-        });
-      } else {
-        _timer?.cancel();
-        setState(() {
-          _isRunning = false;
-        });
-        _showFlowExtensionSheet();
-      }
-    });
-  }
-
-  void _pauseTimer() {
-    _timer?.cancel();
-    setState(() {
-      _isRunning = false;
-    });
-  }
-
-  String _formatTime(int totalSeconds) {
-    final minutes = totalSeconds ~/ 60;
-    final seconds = totalSeconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-  }
-
   void _earlySurrender() {
-    _pauseTimer();
+    _viewModel.pauseTimer();
     _showSessionCompletionDialog();
   }
 
@@ -100,7 +65,7 @@ class _TimerScreenState extends State<TimerScreen> {
               ),
               const SizedBox(height: 20),
               const Text(
-                '🌸 Bunga Kebijaksanaan Telah Mekar! 🌸',
+                'Bunga Kebijaksanaan Telah Mekar!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 20,
@@ -123,10 +88,7 @@ class _TimerScreenState extends State<TimerScreen> {
               ElevatedButton.icon(
                 onPressed: () {
                   Navigator.pop(context);
-                  setState(() {
-                    _secondsRemaining += 10 * 60;
-                  });
-                  _startTimer();
+                  _viewModel.addTime(10 * 60, _showFlowExtensionSheet);
                 },
                 icon: const Icon(Icons.add_alarm, color: Colors.white),
                 label: const Text('Tambah +10 Menit'),
@@ -143,10 +105,7 @@ class _TimerScreenState extends State<TimerScreen> {
               ElevatedButton.icon(
                 onPressed: () {
                   Navigator.pop(context);
-                  setState(() {
-                    _secondsRemaining += 25 * 60;
-                  });
-                  _startTimer();
+                  _viewModel.addTime(25 * 60, _showFlowExtensionSheet);
                 },
                 icon: const Icon(Icons.hourglass_bottom, color: Colors.white),
                 label: const Text('Tambah +25 Menit'),
@@ -204,7 +163,8 @@ class _TimerScreenState extends State<TimerScreen> {
           ),
           title: Row(
             children: [
-              const Text('🌸 ', style: TextStyle(fontSize: 22)),
+              const Icon(Icons.local_florist, size: 26, color: sakuraPink),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   title,
@@ -290,7 +250,7 @@ class _TimerScreenState extends State<TimerScreen> {
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                _startTimer(); // Lanjutkan timer jika batal menutup
+                _viewModel.startTimer(_showFlowExtensionSheet); // Lanjutkan timer
               },
               child: Text(
                 'Batal',
@@ -302,11 +262,8 @@ class _TimerScreenState extends State<TimerScreen> {
                 if (formKey.currentState!.validate()) {
                   final pagesRead = int.parse(pagesController.text.trim());
 
-                  // Eksekusi transaksi database
-                  final sessionResult = await DatabaseHelper.instance.completeReadingSession(
-                    bookId: bookId,
-                    pagesRead: pagesRead,
-                  );
+                  // Eksekusi transaksi database melalui ViewModel
+                  final sessionResult = await _viewModel.completeSession(bookId, pagesRead);
 
                   if (context.mounted) {
                     Navigator.pop(context); // Tutup dialog
@@ -340,165 +297,170 @@ class _TimerScreenState extends State<TimerScreen> {
   Widget build(BuildContext context) {
     final String title = widget.book['title'] ?? 'Grimoire';
 
-    return Scaffold(
-      backgroundColor: bgBeige,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: warmBrown),
-          onPressed: () {
-            // Konfirmasi jika ingin keluar dari sesi yang sedang berjalan
-            _earlySurrender();
-          },
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(color: warmBrown, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Spacer(),
-
-              // AREA ANIMASI: Kuncup Bunga / Sakurabuds Cozy Placeholder
-              Center(
-                child: Container(
-                  width: 200,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: sakuraPink.withValues(alpha: 0.3),
-                        blurRadius: 25,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Ring progress luar yang bergaya
-                      Container(
-                        width: 170,
-                        height: 170,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: sakuraPink.withValues(alpha: 0.3),
-                            width: 6,
-                          ),
-                        ),
-                      ),
-                      // Ikon Bunga Cozy
-                      Icon(
-                        Icons.local_florist,
-                        size: 90,
-                        color: _isRunning ? sakuraPink : sakuraPink.withValues(alpha: 0.6),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 50),
-
-              // TIMER DISPLAY
-              Text(
-                _formatTime(_secondsRemaining),
-                style: const TextStyle(
-                  fontSize: 72,
-                  fontWeight: FontWeight.bold,
-                  color: warmBrown,
-                  fontFamily: 'Courier', // Font lebar seragam
-                  letterSpacing: 2.0,
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              // Status Sesi
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.8),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: sakuraPink.withValues(alpha: 0.3)),
-                ),
-                child: Text(
-                  _isRunning ? '🌸 Sedang Membaca...' : '⏸ Sesi Jeda',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: warmBrown,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-
-              const Spacer(),
-
-              // TOMBOL KENDALI
-              Row(
+    return ListenableBuilder(
+      listenable: _viewModel,
+      builder: (context, _) {
+        return Scaffold(
+          backgroundColor: bgBeige,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: warmBrown),
+              onPressed: () {
+                // Konfirmasi jika ingin keluar dari sesi yang sedang berjalan
+                _earlySurrender();
+              },
+            ),
+            title: Text(
+              title,
+              style: const TextStyle(color: warmBrown, fontWeight: FontWeight.bold),
+            ),
+            centerTitle: true,
+          ),
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Play/Pause button
-                  ElevatedButton(
-                    onPressed: () {
-                      if (_isRunning) {
-                        _pauseTimer();
-                      } else {
-                        _startTimer();
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: warmBrown,
-                      shape: const CircleBorder(),
-                      padding: const EdgeInsets.all(20),
-                      elevation: 4,
-                      side: BorderSide(color: sakuraPink.withValues(alpha: 0.5)),
-                    ),
-                    child: Icon(
-                      _isRunning ? Icons.pause : Icons.play_arrow,
-                      size: 30,
-                    ),
-                  ),
+                  const Spacer(),
 
-                  const SizedBox(width: 24),
-
-                  // Early Surrender button
-                  ElevatedButton.icon(
-                    onPressed: _earlySurrender,
-                    icon: const Icon(Icons.stop, color: Colors.white),
-                    label: const Text(
-                      'Hentikan Sesi',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: warmBrown,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
+                  // AREA ANIMASI: Kuncup Bunga / Sakurabuds Cozy Placeholder
+                  Center(
+                    child: Container(
+                      width: 200,
+                      height: 200,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: sakuraPink.withValues(alpha: 0.3),
+                            blurRadius: 25,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
                       ),
-                      elevation: 4,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Ring progress luar yang bergaya
+                          Container(
+                            width: 170,
+                            height: 170,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: sakuraPink.withValues(alpha: 0.3),
+                                width: 6,
+                              ),
+                            ),
+                          ),
+                          // Ikon Bunga Cozy
+                          Icon(
+                            Icons.local_florist,
+                            size: 90,
+                            color: _viewModel.isRunning ? sakuraPink : sakuraPink.withValues(alpha: 0.6),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+
+                  const SizedBox(height: 50),
+
+                  // TIMER DISPLAY
+                  Text(
+                    _viewModel.formattedTime,
+                    style: const TextStyle(
+                      fontSize: 72,
+                      fontWeight: FontWeight.bold,
+                      color: warmBrown,
+                      fontFamily: 'Courier', // Font lebar seragam
+                      letterSpacing: 2.0,
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // Status Sesi
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: sakuraPink.withValues(alpha: 0.3)),
+                    ),
+                    child: Text(
+                      _viewModel.isRunning ? 'Sedang Membaca...' : 'Sesi Jeda',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: warmBrown,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+
+                  const Spacer(),
+
+                  // TOMBOL KENDALI
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Play/Pause button
+                      ElevatedButton(
+                        onPressed: () {
+                          if (_viewModel.isRunning) {
+                            _viewModel.pauseTimer();
+                          } else {
+                            _viewModel.startTimer(_showFlowExtensionSheet);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: warmBrown,
+                          shape: const CircleBorder(),
+                          padding: const EdgeInsets.all(20),
+                          elevation: 4,
+                          side: BorderSide(color: sakuraPink.withValues(alpha: 0.5)),
+                        ),
+                        child: Icon(
+                          _viewModel.isRunning ? Icons.pause : Icons.play_arrow,
+                          size: 30,
+                        ),
+                      ),
+
+                      const SizedBox(width: 24),
+
+                      // Early Surrender button
+                      ElevatedButton.icon(
+                        onPressed: _earlySurrender,
+                        icon: const Icon(Icons.stop, color: Colors.white),
+                        label: const Text(
+                          'Hentikan Sesi',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: warmBrown,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          elevation: 4,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const Spacer(),
                 ],
               ),
-
-              const Spacer(),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      }
     );
   }
 }

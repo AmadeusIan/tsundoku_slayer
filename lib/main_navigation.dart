@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'dashboard_screen.dart';
-import 'shop_screen.dart';
-import 'grimoire_library_screen.dart';
+import 'views/dashboard_screen.dart';        // <-- Tambahkan views/
+import 'views/shop_screen.dart';             // <-- Tambahkan views/
+import 'views/grimoire_library_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
